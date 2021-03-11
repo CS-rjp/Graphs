@@ -1,5 +1,7 @@
-from random import shuffle
+from random import shuffle, randint
 from queue import Queue
+import time
+
 
 
 class User:
@@ -17,15 +19,18 @@ class SocialGraph:
     def add_friendship(self, user_id, friend_id):
         """
         Creates a bi-directional friendship
+        
+        stretch: returning T/F to check for collisions
+        include collision counter
         """
         if user_id == friend_id:
-            print("WARNING: You cannot be friends with yourself")
+            return False #("WARNING: You cannot be friends with yourself")
         elif friend_id in self.friendships[user_id] or user_id in self.friendships[friend_id]:
-            print("WARNING: Friendship already exists")
+            return False #("WARNING: Friendship already exists")
         else:
             self.friendships[user_id].add(friend_id)
             self.friendships[friend_id].add(user_id)
-
+            return True
 
     def add_user(self, name):
         """
@@ -45,6 +50,9 @@ class SocialGraph:
         between those users.
 
         The number of users must be greater than the average number of friendships.
+
+        ***for use with dense graphs***
+
         """
         # Reset graph
         self.last_id = 0
@@ -63,6 +71,8 @@ class SocialGraph:
 
         for user_id in self.users:
             # avoid duplicates
+            # negate collisions using range(user_id +1, self.last_id +1)
+            # quadratic O(n*2)
             for friend_id in range(user_id +1, self.last_id +1):
                 possible_friendships.append((user_id, friend_id)) # creates a tuple
 
@@ -76,6 +86,48 @@ class SocialGraph:
             user_id =friendship[0]
             friend_id = friendship[1]
             self.add_friendship(user_id, friend_id)
+
+    def populate_graph_linear(self, num_users, avg_friendships):
+        """
+        Takes a number of users and an average number of friendships
+        as arguments
+
+        Creates that number of users and a randomly distributed friendships
+        between those users.
+
+        The number of users must be greater than the average number of friendships.
+
+
+        ***for use with sparse graphs***
+
+        """
+        # Reset graph
+        self.last_id = 0
+        self.users = {}
+        self.friendships = {}
+        # !!!! IMPLEMENT ME
+
+        # Add users
+        for i in range(0, num_users):
+            self.add_user(f'User {i+1}')
+        
+        # Create friendships
+        # generate all possible friendships
+        # create a list of possible friendships
+        total_friendships = []
+        collisions = 0
+        target_friendships = (num_users * avg_friendships)
+
+        # utilize random library
+        while total_friendships < target_friendships:
+            user_id = random.randint(1, self.last_id)
+            friend_id = random.randint(1, self.last_id)
+            if self.add_friendship(user_id, friend_id):
+                total_friendships += 2
+            else:
+                collisions += 1
+        
+        print(f'COLLISIONS: {collisions}')
 
 
     def get_all_social_paths(self, user_id):
@@ -120,9 +172,23 @@ class SocialGraph:
         return visited
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':   
+    num_users = 200
+    avg_friendships = 100
+
+    start_time = time.time()
+    sg.populate_graph(num_users, avg_friendships)   
+    end_time = time.time()
+    print(f'Quadratic Runtime: {end_time - start_time} sec')
+    
+    
+    start_time = time.time()
+    sg.populate_graph_linear(num_users, avg_friendships)
+    end_time = time.time()
+    print(f'Linear Runtime: {end_time - start_time} sec')
+
     sg = SocialGraph()
-    sg.populate_graph(10, 2)
+    sg.populate_graph(10, 2) 
     print(sg.friendships)
     connections = sg.get_all_social_paths(1)
     print(connections)
